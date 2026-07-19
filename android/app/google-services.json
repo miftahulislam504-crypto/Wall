@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "720602671073",
+    "project_id": "wall-dash00",
+    "storage_bucket": "wall-dash00.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:720602671073:android:98d550dfccfae3b0b354a0",
+        "android_client_info": {
+          "package_name": "com.wallDash.wall_dash"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "720602671073-2obk9jdhgo2ide5ip10la1cbdeac7ugh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAGgGpIRZlq9mFl9voEHq9vmnKOyFFOKkg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "720602671073-2obk9jdhgo2ide5ip10la1cbdeac7ugh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

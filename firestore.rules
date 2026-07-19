@@ -1,0 +1,64 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Matchmaking queue -------------------------------------------------
+    // Anyone signed in (anonymously) may create their own queue entry and
+    // read/delete only their own. The matching player updates someone
+    // else's entry ONLY to attach a roomId + status:'matched' (claimed via
+    // a transaction client-side); no other fields may change.
+    match /matchmaking_queue/{entryId} {
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid;
+
+      allow read: if request.auth != null;
+
+      allow delete: if request.auth != null
+                    && resource.data.uid == request.auth.uid;
+
+      allow update: if request.auth != null
+                    && resource.data.status == 'waiting'
+                    && request.resource.data.status == 'matched'
+                    && request.resource.data.uid == resource.data.uid
+                    && request.resource.data.name == resource.data.name
+                    && request.resource.data.roomId is string;
+    }
+
+    // --- Rooms ---------------------------------------------------------
+    match /rooms/{roomId} {
+      allow read: if request.auth != null;
+
+      // Only the creator may create the room, and only as themselves.
+      allow create: if request.auth != null
+                    && request.resource.data.hostUid == request.auth.uid
+                    && request.resource.data.status == 'waiting'
+                    && request.resource.data.guestUid == null;
+
+      // A second player may join an empty, waiting room as guest.
+      allow update: if request.auth != null && (
+        // Guest joining an open room.
+        (
+          resource.data.status == 'waiting' &&
+          resource.data.guestUid == null &&
+          request.resource.data.guestUid == request.auth.uid &&
+          request.resource.data.status == 'active' &&
+          request.resource.data.hostUid == resource.data.hostUid
+        )
+        ||
+        // Either participant pushing a game-state update or presence ping.
+        (
+          (resource.data.hostUid == request.auth.uid ||
+           resource.data.guestUid == request.auth.uid) &&
+          request.resource.data.hostUid == resource.data.hostUid &&
+          request.resource.data.guestUid == resource.data.guestUid
+        )
+      );
+
+      // Only the host may delete, and only before anyone has joined.
+      allow delete: if request.auth != null
+                    && resource.data.hostUid == request.auth.uid
+                    && resource.data.guestUid == null;
+    }
+  }
+}

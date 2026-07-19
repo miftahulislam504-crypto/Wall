@@ -10,15 +10,15 @@ const Color kP1ColorDeep = Color(0xFF2563EB);
 const Color kP2Color = Color(0xFFFF4D6A); // red "ROT"
 const Color kP2ColorDeep = Color(0xFFDC2233);
 
-const Color kAppBg = Color(0xFF060911);
-const Color kBoardFrame = Color(0xFF0E1424);
-const Color kBoardBg = Color(0xFF121A2E);
-const Color kCellBg = Color(0xFF19233C);
-const Color kCellBgAlt = Color(0xFF161F36);
-const Color kGridLine = Color(0x337C8DB5);
-const Color kWallColor = Color(0xFFFFC46B);
-const Color kWallColorDeep = Color(0xFFE8992E);
-const Color kHighlight = Color(0xFF3CE7B0);
+const Color kAppBg = Color(0xFF05070D);
+const Color kBoardFrame = Color(0xFF0A0E18);
+const Color kBoardBg = Color(0xFF0C111F);
+const Color kCellBg = Color(0xFF111928);
+const Color kCellBgAlt = Color(0xFF0E1523);
+const Color kGridLine = Color(0x2A6B7A9C);
+const Color kWallColor = Color(0xFFE6A85C);
+const Color kWallColorDeep = Color(0xFFC77E22);
+const Color kHighlight = Color(0xFF2FB58F);
 
 Color wallColorFor(PlayerId? owner) {
   if (owner == PlayerId.p1) return kP1Color;
@@ -62,17 +62,17 @@ class BoardWidget extends StatelessWidget {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF1A2340), Color(0xFF0A0E1A)],
+                colors: [Color(0xFF141A30), Color(0xFF07090F)],
               ),
-              border: Border.all(color: const Color(0xFF2E3A5C), width: 1.4),
+              border: Border.all(color: const Color(0xFF232C48), width: 1.2),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.55),
+                  color: Colors.black.withOpacity(0.6),
                   blurRadius: 30,
                   offset: const Offset(0, 18),
                 ),
                 BoxShadow(
-                  color: Colors.white.withOpacity(0.03),
+                  color: Colors.white.withOpacity(0.02),
                   blurRadius: 1,
                   offset: const Offset(0, 1),
                 ),
@@ -215,7 +215,7 @@ class _BoardPainter extends CustomPainter {
       ..shader = const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [Color(0xFF0F1626), kBoardBg, Color(0xFF141C32)],
+        colors: [Color(0xFF0A0F1C), kBoardBg, Color(0xFF0D1322)],
       ).createShader(bgRect);
     canvas.drawRRect(
       RRect.fromRectAndRadius(bgRect, const Radius.circular(16)),
@@ -244,10 +244,6 @@ class _BoardPainter extends CustomPainter {
     _drawGlowingGoalEdge(canvas, unit, cell, n, row: 0, color: kP2Color);
     _drawGlowingGoalEdge(canvas, unit, cell, n, row: n - 1, color: kP1Color);
 
-    for (final pos in legalMoveTargets) {
-      _drawLegalTarget(canvas, pos, unit, cell);
-    }
-
     for (final w in state.walls) {
       _drawWall(canvas, w, unit, cell, gap, wallColorFor(w.owner),
           wallColorDeepFor(w.owner), 1.0);
@@ -267,51 +263,20 @@ class _BoardPainter extends CustomPainter {
     final width = n * unit - (unit - cell);
     final rect = Rect.fromLTWH(0, row * unit, width, cell);
 
-    canvas.drawRect(rect, Paint()..color = color.withOpacity(0.10));
+    canvas.drawRect(rect, Paint()..color = color.withOpacity(0.055));
 
     final lineY = row == 0 ? row * unit + 2 : row * unit + cell - 2;
     final glowPaint = Paint()
-      ..color = color.withOpacity(0.9)
-      ..strokeWidth = 3
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+      ..color = color.withOpacity(0.5)
+      ..strokeWidth = 2
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
     canvas.drawLine(Offset(4, lineY), Offset(width - 4, lineY), glowPaint);
     canvas.drawLine(
       Offset(4, lineY),
       Offset(width - 4, lineY),
       Paint()
-        ..color = color
-        ..strokeWidth = 1.4,
-    );
-  }
-
-  void _drawLegalTarget(Canvas canvas, Pos pos, double unit, double cell) {
-    final center = Offset(
-      pos.col * unit + cell / 2,
-      pos.row * unit + cell / 2,
-    );
-    final r = cell * 0.30;
-
-    canvas.drawCircle(
-      center,
-      r + 5,
-      Paint()
-        ..color = kHighlight.withOpacity(0.35)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
-    );
-    canvas.drawCircle(
-      center,
-      r,
-      Paint()
-        ..color = kHighlight.withOpacity(0.16)
-        ..style = PaintingStyle.fill,
-    );
-    canvas.drawCircle(
-      center,
-      r,
-      Paint()
-        ..color = kHighlight.withOpacity(0.9)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
+        ..color = color.withOpacity(0.75)
+        ..strokeWidth = 1.2,
     );
   }
 
@@ -338,8 +303,8 @@ class _BoardPainter extends CustomPainter {
     canvas.drawRRect(
       rrect,
       Paint()
-        ..color = color.withOpacity(0.65 * opacity)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
+        ..color = color.withOpacity(0.35 * opacity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
     );
     final gradient = w.orientation == WallOrientation.horizontal
         ? LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
@@ -353,7 +318,7 @@ class _BoardPainter extends CustomPainter {
     canvas.drawRRect(
       rrect,
       Paint()
-        ..color = Colors.white.withOpacity(0.35 * opacity)
+        ..color = Colors.white.withOpacity(0.22 * opacity)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1,
     );
@@ -380,10 +345,10 @@ class _BoardPainter extends CustomPainter {
 
     canvas.drawCircle(
       center,
-      radius * 1.9,
+      radius * 1.5,
       Paint()
-        ..color = color.withOpacity(0.30)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
+        ..color = color.withOpacity(0.16)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
     );
 
     final sphereRect = Rect.fromCircle(center: center, radius: radius);

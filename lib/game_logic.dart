@@ -20,6 +20,10 @@ class Pos {
 
   @override
   String toString() => '($row,$col)';
+
+  Map<String, dynamic> toJson() => {'row': row, 'col': col};
+  factory Pos.fromJson(Map<String, dynamic> json) =>
+      Pos(json['row'] as int, json['col'] as int);
 }
 
 /// Orientation of a wall segment.
@@ -51,6 +55,22 @@ class Wall {
 
   @override
   int get hashCode => row * 1000 + col * 10 + orientation.index;
+
+  Map<String, dynamic> toJson() => {
+        'row': row,
+        'col': col,
+        'orientation': orientation.name,
+        'owner': owner?.name,
+      };
+
+  factory Wall.fromJson(Map<String, dynamic> json) => Wall(
+        json['row'] as int,
+        json['col'] as int,
+        WallOrientation.values.byName(json['orientation'] as String),
+        json['owner'] == null
+            ? null
+            : PlayerId.values.byName(json['owner'] as String),
+      );
 }
 
 class GameState {
@@ -61,6 +81,7 @@ class GameState {
   PlayerId? winner;
   int p1WallsPlaced;
   int p2WallsPlaced;
+  int moveCount;
 
   GameState({
     Pos? p1Pos,
@@ -70,12 +91,13 @@ class GameState {
     this.winner,
     this.p1WallsPlaced = 0,
     this.p2WallsPlaced = 0,
-  })  : p1Pos = p1Pos ?? const Pos(0, 4),
-        p2Pos = p2Pos ?? const Pos(kBoardSize - 1, 4),
+    this.moveCount = 0,
+  })  : p1Pos = p1Pos ?? const Pos(kBoardSize - 1, 4),
+        p2Pos = p2Pos ?? const Pos(0, 4),
         walls = walls ?? [];
 
   Pos posOf(PlayerId id) => id == PlayerId.p1 ? p1Pos : p2Pos;
-  int targetRowOf(PlayerId id) => id == PlayerId.p1 ? kBoardSize - 1 : 0;
+  int targetRowOf(PlayerId id) => id == PlayerId.p1 ? 0 : kBoardSize - 1;
   PlayerId get other => turn == PlayerId.p1 ? PlayerId.p2 : PlayerId.p1;
 
   GameState clone() => GameState(
@@ -86,6 +108,33 @@ class GameState {
         winner: winner,
         p1WallsPlaced: p1WallsPlaced,
         p2WallsPlaced: p2WallsPlaced,
+        moveCount: moveCount,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'p1Pos': p1Pos.toJson(),
+        'p2Pos': p2Pos.toJson(),
+        'walls': walls.map((w) => w.toJson()).toList(),
+        'turn': turn.name,
+        'winner': winner?.name,
+        'p1WallsPlaced': p1WallsPlaced,
+        'p2WallsPlaced': p2WallsPlaced,
+        'moveCount': moveCount,
+      };
+
+  factory GameState.fromJson(Map<String, dynamic> json) => GameState(
+        p1Pos: Pos.fromJson(Map<String, dynamic>.from(json['p1Pos'] as Map)),
+        p2Pos: Pos.fromJson(Map<String, dynamic>.from(json['p2Pos'] as Map)),
+        walls: (json['walls'] as List)
+            .map((w) => Wall.fromJson(Map<String, dynamic>.from(w as Map)))
+            .toList(),
+        turn: PlayerId.values.byName(json['turn'] as String),
+        winner: json['winner'] == null
+            ? null
+            : PlayerId.values.byName(json['winner'] as String),
+        p1WallsPlaced: json['p1WallsPlaced'] as int,
+        p2WallsPlaced: json['p2WallsPlaced'] as int,
+        moveCount: json['moveCount'] as int? ?? 0,
       );
 }
 
@@ -194,8 +243,10 @@ class GameEngine {
 
   /// Checks whether both players still have at least one path to their goal.
   static bool bothPlayersHavePath(GameState state) {
-    final p1Len = shortestPathLength(state, state.p1Pos, kBoardSize - 1, state.p2Pos);
-    final p2Len = shortestPathLength(state, state.p2Pos, 0, state.p1Pos);
+    final p1Len = shortestPathLength(
+        state, state.p1Pos, state.targetRowOf(PlayerId.p1), state.p2Pos);
+    final p2Len = shortestPathLength(
+        state, state.p2Pos, state.targetRowOf(PlayerId.p2), state.p1Pos);
     return p1Len != -1 && p2Len != -1;
   }
 
@@ -251,6 +302,7 @@ class GameEngine {
     } else {
       next.turn = next.other;
     }
+    next.moveCount += 1;
     return next;
   }
 
@@ -269,6 +321,7 @@ class GameEngine {
       next.p2WallsPlaced += 1;
     }
     next.turn = next.other;
+    next.moveCount += 1;
     return next;
   }
 }

@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'game_screen.dart';
 import 'board_widget.dart';
+import 'online_lobby_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -70,6 +71,17 @@ class HomeScreen extends StatelessWidget {
                       icon: Icons.people_alt_rounded,
                       accent: kP1Color,
                       onTap: () => _startGame(context, GameMode.twoPlayer),
+                    ),
+                    const SizedBox(height: 16),
+                    _menuButton(
+                      context,
+                      label: 'Play Online',
+                      sub: 'Quick match or invite with a code',
+                      icon: Icons.public_rounded,
+                      accent: kHighlight,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const OnlineLobbyScreen()),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     _menuButton(
