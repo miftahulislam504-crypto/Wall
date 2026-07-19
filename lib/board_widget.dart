@@ -116,6 +116,13 @@ class BoardWidget extends StatelessWidget {
     final gap = cell * 0.18;
     final unit = cell + gap;
 
+    // The visual gap between cells is intentionally thin (18% of a cell) so
+    // the board looks clean. Hitting that thin strip with a finger is hard,
+    // so for touch detection we treat a wider "reach" band around each gap
+    // (extending into the neighboring cells) as valid wall-tap territory,
+    // while the drawn wall stays in the same visual spot.
+    const double edgeReach = 0.30; // fraction of a cell, on each side of the gap
+
     double posToCoord(double p) => p / unit;
 
     final rowCoord = posToCoord(local.dy);
@@ -125,8 +132,13 @@ class BoardWidget extends StatelessWidget {
     final colFrac = colCoord - colCoord.floorToDouble();
     final cellFrac = cell / unit;
 
-    final isNearRowGap = rowFrac > cellFrac;
-    final isNearColGap = colFrac > cellFrac;
+    // How far (in cell-fractions) the tap is past the "reach" threshold for
+    // each axis. Positive means it counts as a gap-tap on that axis.
+    final rowGapDist = rowFrac - (cellFrac - edgeReach);
+    final colGapDist = colFrac - (cellFrac - edgeReach);
+
+    final isNearRowGap = rowGapDist > 0;
+    final isNearColGap = colGapDist > 0;
 
     if (isNearRowGap && !isNearColGap) {
       final r = rowCoord.floor();
@@ -146,7 +158,9 @@ class BoardWidget extends StatelessWidget {
       final r = rowCoord.floor();
       final c = colCoord.floor();
       if (r >= 0 && r <= n - 2 && c >= 0 && c <= n - 2) {
-        final orientation = (rowFrac - cellFrac) > (colFrac - cellFrac)
+        // Both axes are within reach of a gap — pick whichever is closer to
+        // an actual gap so a corner-ish tap still resolves sensibly.
+        final orientation = rowGapDist > colGapDist
             ? WallOrientation.horizontal
             : WallOrientation.vertical;
         onWallTap(Wall(r, c, orientation));

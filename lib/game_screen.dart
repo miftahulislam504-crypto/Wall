@@ -44,13 +44,24 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
+  // Fingers rarely land on the exact same pixel twice, and the wall slots
+  // are narrow. If the second tap lands one row/col away from the pending
+  // wall (same orientation), treat it as "confirm" instead of silently
+  // switching the preview — this is what a human tapping twice near the
+  // same spot actually means.
+  bool _isSameOrAdjacentWall(Wall a, Wall b) {
+    if (a.orientation != b.orientation) return false;
+    return (a.row - b.row).abs() <= 1 && (a.col - b.col).abs() <= 1;
+  }
+
   void _onWallTap(Wall wall) {
     if (_state.winner != null || _aiThinking) return;
     if (widget.mode == GameMode.vsAi && _state.turn != humanId) return;
     if (_actionMode != ActionMode.wall) return;
 
-    if (_pendingWall == wall) {
-      final result = GameEngine.tryPlaceWall(_state, wall);
+    final pending = _pendingWall;
+    if (pending != null && _isSameOrAdjacentWall(pending, wall)) {
+      final result = GameEngine.tryPlaceWall(_state, pending);
       if (result != null) {
         setState(() {
           _state = result;
