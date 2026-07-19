@@ -36,7 +36,10 @@ class _GameScreenState extends State<GameScreen> {
 
     final result = GameEngine.tryMove(_state, pos);
     if (result != null) {
-      setState(() => _state = result);
+      setState(() {
+        _state = result;
+        _actionMode = ActionMode.move;
+      });
       _maybeTriggerAi();
     }
   }
@@ -53,6 +56,7 @@ class _GameScreenState extends State<GameScreen> {
         setState(() {
           _state = result;
           _pendingWall = null;
+          _actionMode = ActionMode.move;
         });
         _maybeTriggerAi();
       } else {
@@ -82,6 +86,13 @@ class _GameScreenState extends State<GameScreen> {
     setState(() => _aiThinking = true);
     Future.delayed(const Duration(milliseconds: 500), () {
       if (!mounted) return;
+      // Re-check against the *current* state at execution time — not a
+      // stale value captured when the timer was scheduled — so the AI
+      // never computes a move against outdated wall positions.
+      if (_state.winner != null || _state.turn == humanId) {
+        setState(() => _aiThinking = false);
+        return;
+      }
       final next = _ai.decideMove(_state);
       setState(() {
         _state = next;
@@ -126,20 +137,35 @@ class _GameScreenState extends State<GameScreen> {
           children: [
             _buildStatusBar(),
             const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: BoardWidget(
-                state: _state,
-                legalMoveTargets: _legalTargets,
-                hoverWall: _pendingWall,
-                onCellTap: _onCellTap,
-                onWallTap: _onWallTap,
+            if (widget.mode == GameMode.twoPlayer) ...[
+              // P2 (লাল) controls up top — rotated so they read correctly
+              // for a player sitting across the table.
+              Transform.rotate(
+                angle: 3.14159,
+                child: _buildActionToggleFor(PlayerId.p2),
+              ),
+              const SizedBox(height: 12),
+            ],
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: BoardWidget(
+                    state: _state,
+                    legalMoveTargets: _legalTargets,
+                    hoverWall: _pendingWall,
+                    onCellTap: _onCellTap,
+                    onWallTap: _onWallTap,
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-            _buildActionToggle(),
-            const Spacer(),
-            if (winner != null) _buildWinBanner(winner),
+            const SizedBox(height: 12),
+            _buildActionToggleFor(PlayerId.p1),
+            if (winner != null) ...[
+              const SizedBox(height: 16),
+              _buildWinBanner(winner),
+            ],
             const SizedBox(height: 24),
           ],
         ),
@@ -198,13 +224,16 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _buildActionToggle() {
-    final canAct = _state.winner == null &&
-        !_aiThinking &&
-        (widget.mode != GameMode.vsAi || _state.turn == humanId);
+  /// Action toggle (Move / Wall) for a specific player. Only tappable
+  /// when it's that player's turn — greyed out otherwise so each side
+  /// clearly sees whose turn it is.
+  Widget _buildActionToggleFor(PlayerId player) {
+    final isMyTurn = _state.turn == player;
+    final canAct = _state.winner == null && !_aiThinking && isMyTurn;
+    final color = player == PlayerId.p1 ? kP1Color : kP2Color;
 
     return AnimatedOpacity(
-      opacity: canAct ? 1.0 : 0.4,
+      opacity: canAct ? 1.0 : 0.35,
       duration: const Duration(milliseconds: 200),
       child: IgnorePointer(
         ignoring: !canAct,
@@ -217,6 +246,7 @@ class _GameScreenState extends State<GameScreen> {
                   label: 'বল সরাও',
                   icon: Icons.arrow_forward,
                   selected: _actionMode == ActionMode.move,
+                  color: color,
                   onTap: () => setState(() {
                     _actionMode = ActionMode.move;
                     _pendingWall = null;
@@ -229,6 +259,7 @@ class _GameScreenState extends State<GameScreen> {
                   label: 'Wall বসাও',
                   icon: Icons.grid_4x4,
                   selected: _actionMode == ActionMode.wall,
+                  color: color,
                   onTap: () => setState(() => _actionMode = ActionMode.wall),
                 ),
               ),
@@ -244,6 +275,7 @@ class _GameScreenState extends State<GameScreen> {
     required IconData icon,
     required bool selected,
     required VoidCallback onTap,
+    Color color = kWallColor,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -251,22 +283,22 @@ class _GameScreenState extends State<GameScreen> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: selected ? kWallColor.withOpacity(0.9) : const Color(0xFF1B2440),
+          color: selected ? color.withOpacity(0.9) : const Color(0xFF1B2440),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? kWallColor : kGridLine,
+            color: selected ? color : kGridLine,
             width: 1.5,
           ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 18, color: selected ? Colors.black : Colors.white70),
+            Icon(icon, size: 18, color: selected ? Colors.white : Colors.white70),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                color: selected ? Colors.black : Colors.white70,
+                color: selected ? Colors.white : Colors.white70,
                 fontWeight: FontWeight.w600,
               ),
             ),

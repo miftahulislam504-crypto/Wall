@@ -7,7 +7,7 @@ const Color kP2Color = Color(0xFFEF4444); // red
 const Color kBoardBg = Color(0xFF141B2E);
 const Color kGridLine = Color(0xFF2A3350);
 const Color kWallColor = Color(0xFFE0B84A);
-const Color kHighlight = Color(0x553B82F6);
+const Color kHighlight = Color(0x9934D399); // bright green, clearly visible
 
 /// Interactive board widget. Reports taps on cells and wall-gap slots.
 class BoardWidget extends StatelessWidget {
@@ -151,16 +151,6 @@ class _BoardPainter extends CustomPainter {
             ..strokeWidth = 1,
         );
       }
-    }
-
-    // Highlight legal move targets.
-    final highlightPaint = Paint()..color = kHighlight;
-    for (final p in legalMoveTargets) {
-      final rect = Rect.fromLTWH(p.col * unit, p.row * unit, cell, cell);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(rect, const Radius.circular(4)),
-        highlightPaint,
-      );
     }
 
     // Highlight target rows (goal edges) subtly.
