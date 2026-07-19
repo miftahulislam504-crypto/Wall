@@ -1,15 +1,37 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'game_logic.dart';
 
-/// Colors matching the reference dark/neon theme (red vs blue).
-const Color kP1Color = Color(0xFF3B82F6); // blue
-const Color kP2Color = Color(0xFFEF4444); // red
-const Color kBoardBg = Color(0xFF141B2E);
-const Color kGridLine = Color(0xFF2A3350);
-const Color kWallColor = Color(0xFFE0B84A);
-const Color kHighlight = Color(0x9934D399); // bright green, clearly visible
+/// ---------------------------------------------------------------------
+/// Palette — deep-space navy board with glowing neon team colors.
+/// ---------------------------------------------------------------------
+const Color kP1Color = Color(0xFF4F9DFF); // blue "BLAU"
+const Color kP1ColorDeep = Color(0xFF2563EB);
+const Color kP2Color = Color(0xFFFF4D6A); // red "ROT"
+const Color kP2ColorDeep = Color(0xFFDC2233);
 
-/// Interactive board widget. Reports taps on cells and wall-gap slots.
+const Color kAppBg = Color(0xFF060911);
+const Color kBoardFrame = Color(0xFF0E1424);
+const Color kBoardBg = Color(0xFF121A2E);
+const Color kCellBg = Color(0xFF19233C);
+const Color kCellBgAlt = Color(0xFF161F36);
+const Color kGridLine = Color(0x337C8DB5);
+const Color kWallColor = Color(0xFFFFC46B);
+const Color kWallColorDeep = Color(0xFFE8992E);
+const Color kHighlight = Color(0xFF3CE7B0);
+
+Color wallColorFor(PlayerId? owner) {
+  if (owner == PlayerId.p1) return kP1Color;
+  if (owner == PlayerId.p2) return kP2Color;
+  return kWallColor;
+}
+
+Color wallColorDeepFor(PlayerId? owner) {
+  if (owner == PlayerId.p1) return kP1ColorDeep;
+  if (owner == PlayerId.p2) return kP2ColorDeep;
+  return kWallColorDeep;
+}
+
 class BoardWidget extends StatelessWidget {
   final GameState state;
   final List<Pos> legalMoveTargets;
@@ -33,15 +55,54 @@ class BoardWidget extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final size = constraints.maxWidth;
-          return GestureDetector(
-            onTapUp: (details) => _handleTap(details.localPosition, size),
-            child: CustomPaint(
-              size: Size(size, size),
-              painter: _BoardPainter(
-                state: state,
-                legalMoveTargets: legalMoveTargets,
-                hoverWall: hoverWall,
+          return Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF1A2340), Color(0xFF0A0E1A)],
               ),
+              border: Border.all(color: const Color(0xFF2E3A5C), width: 1.4),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.55),
+                  blurRadius: 30,
+                  offset: const Offset(0, 18),
+                ),
+                BoxShadow(
+                  color: Colors.white.withOpacity(0.03),
+                  blurRadius: 1,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                const _CornerDiamond(alignment: Alignment.centerLeft),
+                const _CornerDiamond(alignment: Alignment.centerRight),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: GestureDetector(
+                    onTapUp: (details) => _handleTap(details.localPosition, size - 20),
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: 1),
+                      duration: const Duration(milliseconds: 700),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, t, _) => CustomPaint(
+                        size: Size(size - 20, size - 20),
+                        painter: _BoardPainter(
+                          state: state,
+                          legalMoveTargets: legalMoveTargets,
+                          hoverWall: hoverWall,
+                          entrance: t,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           );
         },
@@ -50,7 +111,6 @@ class BoardWidget extends StatelessWidget {
   }
 
   void _handleTap(Offset local, double boardSize) {
-    // Layout: 9 cells + 8 gaps, gap width = 18% of a cell for wall-tap targets.
     const n = kBoardSize;
     final cell = boardSize / (n + (n - 1) * 0.18);
     final gap = cell * 0.18;
@@ -69,7 +129,6 @@ class BoardWidget extends StatelessWidget {
     final isNearColGap = colFrac > cellFrac;
 
     if (isNearRowGap && !isNearColGap) {
-      // Tapped in a horizontal gap band -> horizontal wall.
       final r = rowCoord.floor();
       final c = colCoord.floor();
       if (r >= 0 && r <= n - 2 && c >= 0 && c <= n - 2) {
@@ -84,7 +143,6 @@ class BoardWidget extends StatelessWidget {
         return;
       }
     } else if (isNearRowGap && isNearColGap) {
-      // Corner/intersection tap: default to whichever orientation has more overlap.
       final r = rowCoord.floor();
       final c = colCoord.floor();
       if (r >= 0 && r <= n - 2 && c >= 0 && c <= n - 2) {
@@ -96,10 +154,38 @@ class BoardWidget extends StatelessWidget {
       }
     }
 
-    // Otherwise treat as a cell tap.
     final r = rowCoord.floor().clamp(0, n - 1);
     final c = colCoord.floor().clamp(0, n - 1);
     onCellTap(Pos(r, c));
+  }
+}
+
+class _CornerDiamond extends StatelessWidget {
+  final Alignment alignment;
+  const _CornerDiamond({required this.alignment});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: alignment,
+      child: Container(
+        width: 14,
+        height: 14,
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        decoration: BoxDecoration(
+          color: const Color(0xFF3A4568),
+          borderRadius: BorderRadius.circular(3),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.4),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        transform: Matrix4.rotationZ(math.pi / 4),
+      ),
+    );
   }
 }
 
@@ -107,10 +193,12 @@ class _BoardPainter extends CustomPainter {
   final GameState state;
   final List<Pos> legalMoveTargets;
   final Wall? hoverWall;
+  final double entrance;
 
   _BoardPainter({
     required this.state,
     required this.legalMoveTargets,
+    required this.entrance,
     this.hoverWall,
   });
 
@@ -122,27 +210,27 @@ class _BoardPainter extends CustomPainter {
     final gap = cell * 0.18;
     final unit = cell + gap;
 
-    final bgPaint = Paint()..color = kBoardBg;
+    final bgRect = Rect.fromLTWH(0, 0, boardSize, boardSize);
+    final bgPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFF0F1626), kBoardBg, Color(0xFF141C32)],
+      ).createShader(bgRect);
     canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, boardSize, boardSize),
-        const Radius.circular(16),
-      ),
+      RRect.fromRectAndRadius(bgRect, const Radius.circular(16)),
       bgPaint,
     );
 
-    // Draw cells.
-    final cellPaint = Paint()..color = const Color(0xFF1B2440);
     for (int r = 0; r < n; r++) {
       for (int c = 0; c < n; c++) {
-        final rect = Rect.fromLTWH(
-          c * unit,
-          r * unit,
-          cell,
-          cell,
+        final rect = Rect.fromLTWH(c * unit, r * unit, cell, cell);
+        final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(5));
+        final isAlt = (r + c) % 2 == 0;
+        canvas.drawRRect(
+          rrect,
+          Paint()..color = isAlt ? kCellBg : kCellBgAlt,
         );
-        final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(4));
-        canvas.drawRRect(rrect, cellPaint);
         canvas.drawRRect(
           rrect,
           Paint()
@@ -153,86 +241,181 @@ class _BoardPainter extends CustomPainter {
       }
     }
 
-    // Highlight target rows (goal edges) subtly.
-    _drawGoalEdge(canvas, unit, cell, n, row: 0, color: kP2Color.withOpacity(0.15));
-    _drawGoalEdge(canvas, unit, cell, n, row: n - 1, color: kP1Color.withOpacity(0.15));
+    _drawGlowingGoalEdge(canvas, unit, cell, n, row: 0, color: kP2Color);
+    _drawGlowingGoalEdge(canvas, unit, cell, n, row: n - 1, color: kP1Color);
 
-    // Draw placed walls.
-    final wallPaint = Paint()
-      ..color = kWallColor
-      ..style = PaintingStyle.fill;
+    for (final pos in legalMoveTargets) {
+      _drawLegalTarget(canvas, pos, unit, cell);
+    }
+
     for (final w in state.walls) {
-      _drawWall(canvas, w, unit, cell, gap, wallPaint);
+      _drawWall(canvas, w, unit, cell, gap, wallColorFor(w.owner),
+          wallColorDeepFor(w.owner), 1.0);
     }
 
-    // Draw hover/preview wall (semi-transparent).
     if (hoverWall != null) {
-      final previewPaint = Paint()
-        ..color = kWallColor.withOpacity(0.4)
-        ..style = PaintingStyle.fill;
-      _drawWall(canvas, hoverWall!, unit, cell, gap, previewPaint);
+      _drawWall(canvas, hoverWall!, unit, cell, gap, wallColorFor(state.turn),
+          wallColorDeepFor(state.turn), 0.55);
     }
 
-    // Draw pawns.
-    _drawPawn(canvas, state.p1Pos, unit, cell, kP1Color);
-    _drawPawn(canvas, state.p2Pos, unit, cell, kP2Color);
+    _drawPawn(canvas, state.p1Pos, unit, cell, kP1Color, kP1ColorDeep, entrance);
+    _drawPawn(canvas, state.p2Pos, unit, cell, kP2Color, kP2ColorDeep, entrance);
   }
 
-  void _drawGoalEdge(Canvas canvas, double unit, double cell, int n,
+  void _drawGlowingGoalEdge(Canvas canvas, double unit, double cell, int n,
       {required int row, required Color color}) {
-    final rect = Rect.fromLTWH(0, row * unit, n * unit - (unit - cell), cell);
-    canvas.drawRect(rect, Paint()..color = color);
+    final width = n * unit - (unit - cell);
+    final rect = Rect.fromLTWH(0, row * unit, width, cell);
+
+    canvas.drawRect(rect, Paint()..color = color.withOpacity(0.10));
+
+    final lineY = row == 0 ? row * unit + 2 : row * unit + cell - 2;
+    final glowPaint = Paint()
+      ..color = color.withOpacity(0.9)
+      ..strokeWidth = 3
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    canvas.drawLine(Offset(4, lineY), Offset(width - 4, lineY), glowPaint);
+    canvas.drawLine(
+      Offset(4, lineY),
+      Offset(width - 4, lineY),
+      Paint()
+        ..color = color
+        ..strokeWidth = 1.4,
+    );
+  }
+
+  void _drawLegalTarget(Canvas canvas, Pos pos, double unit, double cell) {
+    final center = Offset(
+      pos.col * unit + cell / 2,
+      pos.row * unit + cell / 2,
+    );
+    final r = cell * 0.30;
+
+    canvas.drawCircle(
+      center,
+      r + 5,
+      Paint()
+        ..color = kHighlight.withOpacity(0.35)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
+    );
+    canvas.drawCircle(
+      center,
+      r,
+      Paint()
+        ..color = kHighlight.withOpacity(0.16)
+        ..style = PaintingStyle.fill,
+    );
+    canvas.drawCircle(
+      center,
+      r,
+      Paint()
+        ..color = kHighlight.withOpacity(0.9)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
   }
 
   void _drawWall(Canvas canvas, Wall w, double unit, double cell, double gap,
-      Paint paint) {
+      Color color, Color deep, double opacity) {
+    final Rect rect;
     if (w.orientation == WallOrientation.horizontal) {
-      final rect = Rect.fromLTWH(
+      rect = Rect.fromLTWH(
         w.col * unit,
         w.row * unit + cell,
         cell * 2 + gap,
         gap,
       );
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(rect, const Radius.circular(3)),
-        paint,
-      );
     } else {
-      final rect = Rect.fromLTWH(
+      rect = Rect.fromLTWH(
         w.col * unit + cell,
         w.row * unit,
         gap,
         cell * 2 + gap,
       );
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(rect, const Radius.circular(3)),
-        paint,
-      );
     }
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(4));
+
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = color.withOpacity(0.65 * opacity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
+    );
+    final gradient = w.orientation == WallOrientation.horizontal
+        ? LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
+            colors: [color.withOpacity(opacity), deep.withOpacity(opacity)])
+        : LinearGradient(begin: Alignment.centerLeft, end: Alignment.centerRight,
+            colors: [color.withOpacity(opacity), deep.withOpacity(opacity)]);
+    canvas.drawRRect(
+      rrect,
+      Paint()..shader = gradient.createShader(rect),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = Colors.white.withOpacity(0.35 * opacity)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
   }
 
-  void _drawPawn(Canvas canvas, Pos pos, double unit, double cell, Color color) {
+  void _drawPawn(Canvas canvas, Pos pos, double unit, double cell, Color color,
+      Color deep, double entrance) {
     final center = Offset(
       pos.col * unit + cell / 2,
       pos.row * unit + cell / 2,
     );
-    final radius = cell * 0.32;
+    final radius = cell * 0.34 * Curves.easeOutBack.transform(entrance);
+
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: center.translate(0, radius * 0.55),
+        width: radius * 1.7,
+        height: radius * 0.55,
+      ),
+      Paint()
+        ..color = Colors.black.withOpacity(0.35)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    );
+
+    canvas.drawCircle(
+      center,
+      radius * 1.9,
+      Paint()
+        ..color = color.withOpacity(0.30)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
+    );
+
+    final sphereRect = Rect.fromCircle(center: center, radius: radius);
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(-0.35, -0.4),
+          radius: 0.95,
+          colors: [
+            Color.lerp(color, Colors.white, 0.55)!,
+            color,
+            deep,
+          ],
+          stops: const [0.0, 0.55, 1.0],
+        ).createShader(sphereRect),
+    );
 
     canvas.drawCircle(
       center,
       radius,
       Paint()
-        ..color = color.withOpacity(0.35)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
-    );
-    canvas.drawCircle(center, radius, Paint()..color = color);
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..color = Colors.white.withOpacity(0.5)
+        ..color = Colors.white.withOpacity(0.28)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
+        ..strokeWidth = 1.2,
+    );
+
+    canvas.drawCircle(
+      center.translate(-radius * 0.32, -radius * 0.35),
+      radius * 0.28,
+      Paint()..color = Colors.white.withOpacity(0.75),
     );
   }
 
@@ -240,6 +423,7 @@ class _BoardPainter extends CustomPainter {
   bool shouldRepaint(covariant _BoardPainter oldDelegate) {
     return oldDelegate.state != state ||
         oldDelegate.legalMoveTargets != legalMoveTargets ||
-        oldDelegate.hoverWall != hoverWall;
+        oldDelegate.hoverWall != hoverWall ||
+        oldDelegate.entrance != entrance;
   }
 }

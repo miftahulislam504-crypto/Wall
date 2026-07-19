@@ -14,9 +14,9 @@ class WallDashApp extends StatelessWidget {
       title: 'Wall Dash',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0B0F1A),
+        scaffoldBackgroundColor: const Color(0xFF060911),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF3B82F6),
+          seedColor: const Color(0xFF4F9DFF),
           brightness: Brightness.dark,
         ),
       ),

@@ -27,11 +27,20 @@ enum WallOrientation { horizontal, vertical }
 
 /// A wall occupies a 2-cell-long slot, anchored at its top-left intersection.
 /// Intersections range from (0,0) to (7,7) on a 9x9 board (8x8 grid of gaps).
+///
+/// Coordinate convention (must match rendering in board_widget.dart exactly):
+/// A horizontal wall at (row, col) sits on the grid line BELOW cell-row `row`
+/// (i.e. blocks movement between row `row` and row `row+1`), spanning column
+/// `col` and `col+1`.
+/// A vertical wall at (row, col) sits on the grid line to the RIGHT of
+/// cell-col `col` (i.e. blocks movement between col `col` and col `col+1`),
+/// spanning row `row` and `row+1`.
 class Wall {
   final int row;
   final int col;
   final WallOrientation orientation;
-  const Wall(this.row, this.col, this.orientation);
+  final PlayerId? owner;
+  const Wall(this.row, this.col, this.orientation, [this.owner]);
 
   @override
   bool operator ==(Object other) =>
@@ -89,11 +98,13 @@ class GameEngine {
       // Horizontal neighbors -> check vertical walls between them.
       final int col = a.col < b.col ? a.col : b.col; // left col
       final int row = a.row;
-      // A vertical wall at (wr, wc) blocks the gap between column wc-1 and wc
-      // for rows wr and wr+1 (spans 2 cells vertically).
+      // A vertical wall at (wr, wc) sits on the line right of column wc,
+      // blocking the gap between column wc and wc+1, for rows wr and wr+1.
+      // So it blocks between `col` and `col+1` exactly when w.col == col,
+      // for either w.row == row or w.row == row - 1 (wall spans 2 rows).
       for (final w in walls) {
         if (w.orientation != WallOrientation.vertical) continue;
-        if (w.col == col + 1 && (w.row == row || w.row == row - 1)) {
+        if (w.col == col && (w.row == row || w.row == row - 1)) {
           return true;
         }
       }
@@ -101,9 +112,11 @@ class GameEngine {
     } else if (a.col == b.col) {
       final int row = a.row < b.row ? a.row : b.row; // top row
       final int col = a.col;
+      // A horizontal wall at (wr, wc) sits on the line below row wr,
+      // blocking the gap between row wr and wr+1, for columns wc and wc+1.
       for (final w in walls) {
         if (w.orientation != WallOrientation.horizontal) continue;
-        if (w.row == row + 1 && (w.col == col || w.col == col - 1)) {
+        if (w.row == row && (w.col == col || w.col == col - 1)) {
           return true;
         }
       }
@@ -247,8 +260,9 @@ class GameEngine {
     if (state.winner != null) return null;
     if (!isWallPlacementValid(state, wall)) return null;
 
+    final owned = Wall(wall.row, wall.col, wall.orientation, state.turn);
     final next = state.clone();
-    next.walls.add(wall);
+    next.walls.add(owned);
     if (next.turn == PlayerId.p1) {
       next.p1WallsPlaced += 1;
     } else {
