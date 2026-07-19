@@ -46,11 +46,11 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'REPLACE_WITH_FLUTTERFIRE_CONFIGURE_OUTPUT',
-    appId: 'REPLACE_WITH_FLUTTERFIRE_CONFIGURE_OUTPUT',
-    messagingSenderId: 'REPLACE_WITH_FLUTTERFIRE_CONFIGURE_OUTPUT',
-    projectId: 'REPLACE_WITH_FLUTTERFIRE_CONFIGURE_OUTPUT',
-    storageBucket: 'REPLACE_WITH_FLUTTERFIRE_CONFIGURE_OUTPUT',
+    apiKey: 'AIzaSyAGgGpIRZlq9mFl9voEHq9vmnKOyFFOKkg',
+    appId: '1:720602671073:android:98d550dfccfae3b0b354a0',
+    messagingSenderId: '720602671073',
+    projectId: 'wall-dash00',
+    storageBucket: 'wall-dash00.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
