@@ -6,8 +6,18 @@ import 'home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await FirebaseService.instance.ensureSignedIn();
+
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)
+        .timeout(const Duration(seconds: 8));
+    await FirebaseService.instance.ensureSignedIn().timeout(const Duration(seconds: 8));
+  } catch (e) {
+    // Don't let Firebase/network problems block the app from opening.
+    // Local (offline) game modes still work without Firebase; online
+    // features will simply show an error when actually used.
+    debugPrint('Firebase init/sign-in failed or timed out: $e');
+  }
+
   runApp(const WallDashApp());
 }
 
