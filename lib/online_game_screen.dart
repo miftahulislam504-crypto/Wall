@@ -107,24 +107,20 @@ class _OnlineGameScreenState extends State<OnlineGameScreen> {
     if (_state == null || !_isMyTurn || _sending) return;
     if (_actionMode != ActionMode.wall) return;
 
-    if (_pendingWall == wall) {
-      final result = GameEngine.tryPlaceWall(_state!, wall);
-      if (result != null) {
-        setState(() {
-          _pendingWall = null;
-          _actionMode = ActionMode.move;
-        });
-        _submit(result);
-      } else {
-        _showSnack('Can\'t place wall here — path blocked or overlapping');
-        setState(() => _pendingWall = null);
-      }
+    if (!GameEngine.isWallPlacementValid(_state!, wall)) {
+      _showSnack('Can\'t place wall here');
+      return;
+    }
+
+    final result = GameEngine.tryPlaceWall(_state!, wall);
+    if (result != null) {
+      setState(() {
+        _pendingWall = null;
+        _actionMode = ActionMode.move;
+      });
+      _submit(result);
     } else {
-      if (!GameEngine.isWallPlacementValid(_state!, wall)) {
-        _showSnack('Can\'t place wall here');
-        return;
-      }
-      setState(() => _pendingWall = wall);
+      _showSnack('Can\'t place wall here — path blocked or overlapping');
     }
   }
 

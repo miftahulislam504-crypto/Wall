@@ -121,7 +121,7 @@ class BoardWidget extends StatelessWidget {
     // so for touch detection we treat a wider "reach" band around each gap
     // (extending into the neighboring cells) as valid wall-tap territory,
     // while the drawn wall stays in the same visual spot.
-    const double edgeReach = 0.30; // fraction of a cell, on each side of the gap
+    const double edgeReach = 0.42; // fraction of a cell, on each side of the gap
 
     double posToCoord(double p) => p / unit;
 

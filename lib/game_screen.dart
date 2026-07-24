@@ -44,41 +44,26 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  // Fingers rarely land on the exact same pixel twice, and the wall slots
-  // are narrow. If the second tap lands one row/col away from the pending
-  // wall (same orientation), treat it as "confirm" instead of silently
-  // switching the preview — this is what a human tapping twice near the
-  // same spot actually means.
-  bool _isSameOrAdjacentWall(Wall a, Wall b) {
-    if (a.orientation != b.orientation) return false;
-    return (a.row - b.row).abs() <= 1 && (a.col - b.col).abs() <= 1;
-  }
-
   void _onWallTap(Wall wall) {
     if (_state.winner != null || _aiThinking) return;
     if (widget.mode == GameMode.vsAi && _state.turn != humanId) return;
     if (_actionMode != ActionMode.wall) return;
 
-    final pending = _pendingWall;
-    if (pending != null && _isSameOrAdjacentWall(pending, wall)) {
-      final result = GameEngine.tryPlaceWall(_state, pending);
-      if (result != null) {
-        setState(() {
-          _state = result;
-          _pendingWall = null;
-          _actionMode = ActionMode.move;
-        });
-        _maybeTriggerAi();
-      } else {
-        _showSnack('Can\'t place wall here — path blocked or overlapping');
-        setState(() => _pendingWall = null);
-      }
+    if (!GameEngine.isWallPlacementValid(_state, wall)) {
+      _showSnack('Can\'t place wall here');
+      return;
+    }
+
+    final result = GameEngine.tryPlaceWall(_state, wall);
+    if (result != null) {
+      setState(() {
+        _state = result;
+        _pendingWall = null;
+        _actionMode = ActionMode.move;
+      });
+      _maybeTriggerAi();
     } else {
-      if (!GameEngine.isWallPlacementValid(_state, wall)) {
-        _showSnack('Can\'t place wall here');
-        return;
-      }
-      setState(() => _pendingWall = wall);
+      _showSnack('Can\'t place wall here — path blocked or overlapping');
     }
   }
 
