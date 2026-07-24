@@ -116,61 +116,54 @@ class BoardWidget extends StatelessWidget {
     final gap = cell * 0.18;
     final unit = cell + gap;
 
-    // The visual gap between cells is intentionally thin (18% of a cell) so
-    // the board looks clean. Hitting that thin strip with a finger is hard,
-    // so for touch detection we treat a wider "reach" band around each gap
-    // (extending into the neighboring cells) as valid wall-tap territory,
-    // while the drawn wall stays in the same visual spot.
-    const double edgeReach = 0.42; // fraction of a cell, on each side of the gap
+    // The visual gap between cells is intentionally thin so the board looks
+    // clean. Hitting that thin strip with a finger is hard, so for touch
+    // detection we treat a small reach band on either side of each gap's
+    // actual pixel position as valid wall-tap territory, while the drawn
+    // wall stays in the same visual spot. This reach is a small fraction of
+    // the cell size, kept low so most of each cell (~80%+) remains
+    // reliable move-tap territory.
+    final double reachPx = cell * 0.11;
 
-    double posToCoord(double p) => p / unit;
-
-    final rowCoord = posToCoord(local.dy);
-    final colCoord = posToCoord(local.dx);
-
-    final rowFrac = rowCoord - rowCoord.floorToDouble();
-    final colFrac = colCoord - colCoord.floorToDouble();
-    final cellFrac = cell / unit;
-
-    // How far (in cell-fractions) the tap is past the "reach" threshold for
-    // each axis. Positive means it counts as a gap-tap on that axis.
-    final rowGapDist = rowFrac - (cellFrac - edgeReach);
-    final colGapDist = colFrac - (cellFrac - edgeReach);
-
-    final isNearRowGap = rowGapDist > 0;
-    final isNearColGap = colGapDist > 0;
-
-    if (isNearRowGap && !isNearColGap) {
-      final r = rowCoord.floor();
-      final c = colCoord.floor();
-      if (r >= 0 && r <= n - 2 && c >= 0 && c <= n - 2) {
-        onWallTap(Wall(r, c, WallOrientation.horizontal));
-        return;
-      }
-    } else if (isNearColGap && !isNearRowGap) {
-      final r = rowCoord.floor();
-      final c = colCoord.floor();
-      if (r >= 0 && r <= n - 2 && c >= 0 && c <= n - 2) {
-        onWallTap(Wall(r, c, WallOrientation.vertical));
-        return;
-      }
-    } else if (isNearRowGap && isNearColGap) {
-      final r = rowCoord.floor();
-      final c = colCoord.floor();
-      if (r >= 0 && r <= n - 2 && c >= 0 && c <= n - 2) {
-        // Both axes are within reach of a gap — pick whichever is closer to
-        // an actual gap so a corner-ish tap still resolves sensibly.
-        final orientation = rowGapDist > colGapDist
-            ? WallOrientation.horizontal
-            : WallOrientation.vertical;
-        onWallTap(Wall(r, c, orientation));
-        return;
-      }
+    bool nearGap(double posInAxis) {
+      // Position within the current unit (cell + gap), i.e. distance from
+      // the start of this row/column.
+      final withinUnit = posInAxis % unit;
+      // The gap sits right after the cell, from `cell` to `unit`.
+      return withinUnit >= cell - reachPx && withinUnit <= unit;
     }
 
-    final r = rowCoord.floor().clamp(0, n - 1);
-    final c = colCoord.floor().clamp(0, n - 1);
-    onCellTap(Pos(r, c));
+    final isNearRowGap = nearGap(local.dy);
+    final isNearColGap = nearGap(local.dx);
+
+    final rowCoord = local.dy / unit;
+    final colCoord = local.dx / unit;
+    final r = rowCoord.floor();
+    final c = colCoord.floor();
+    final wallRowOk = r >= 0 && r <= n - 2;
+    final wallColOk = c >= 0 && c <= n - 2;
+
+    if (isNearRowGap && !isNearColGap && wallRowOk && wallColOk) {
+      onWallTap(Wall(r, c, WallOrientation.horizontal));
+      return;
+    } else if (isNearColGap && !isNearRowGap && wallRowOk && wallColOk) {
+      onWallTap(Wall(r, c, WallOrientation.vertical));
+      return;
+    } else if (isNearRowGap && isNearColGap && wallRowOk && wallColOk) {
+      // Both axes are within reach of a gap — pick whichever the tap is
+      // closer to so a corner-ish tap still resolves sensibly.
+      final rowDist = (cell - (local.dy % unit)).abs();
+      final colDist = (cell - (local.dx % unit)).abs();
+      final orientation = rowDist < colDist
+          ? WallOrientation.horizontal
+          : WallOrientation.vertical;
+      onWallTap(Wall(r, c, orientation));
+      return;
+    }
+
+    final cellR = rowCoord.floor().clamp(0, n - 1);
+    final cellC = colCoord.floor().clamp(0, n - 1);
+    onCellTap(Pos(cellR, cellC));
   }
 }
 
