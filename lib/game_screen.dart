@@ -156,25 +156,25 @@ class _GameScreenState extends State<GameScreen> {
           SafeArea(
             child: Column(
               children: [
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 _buildStatusBar(),
-                const SizedBox(height: 14),
+                const SizedBox(height: 8),
                 if (widget.mode == GameMode.twoPlayer) ...[
                   _buildTeamBanner(PlayerId.p2, flip: true),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
                   Transform.rotate(
                     angle: 3.14159,
                     child: _buildActionToggleFor(PlayerId.p2),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 8),
                 ] else ...[
                   _buildTeamBanner(PlayerId.p2, flip: false),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 8),
                 ],
                 Expanded(
                   child: Center(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
                       child: BoardWidget(
                         state: _state,
                         legalMoveTargets: _legalTargets,
@@ -185,15 +185,15 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 8),
                 _buildTeamBanner(PlayerId.p1, flip: false),
-                const SizedBox(height: 10),
+                const SizedBox(height: 6),
                 _buildActionToggleFor(PlayerId.p1),
                 if (winner != null) ...[
                   const SizedBox(height: 16),
                   _buildWinBanner(winner),
                 ],
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
               ],
             ),
           ),

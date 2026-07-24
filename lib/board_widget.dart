@@ -56,7 +56,7 @@ class BoardWidget extends StatelessWidget {
         builder: (context, constraints) {
           final size = constraints.maxWidth;
           return Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28),
               gradient: const LinearGradient(

@@ -193,13 +193,13 @@ class _OnlineGameScreenState extends State<OnlineGameScreen> {
           SafeArea(
             child: Column(
               children: [
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 _buildStatusBar(state, myName, oppName),
-                const SizedBox(height: 18),
+                const SizedBox(height: 8),
                 Expanded(
                   child: Center(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
                       child: BoardWidget(
                         state: state,
                         legalMoveTargets: _legalTargets,
@@ -210,7 +210,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 8),
                 _buildActionToggle(),
                 if (winner != null) ...[
                   const SizedBox(height: 16),
@@ -225,7 +225,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen> {
                         textAlign: TextAlign.center),
                   ),
                 ],
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
               ],
             ),
           ),
